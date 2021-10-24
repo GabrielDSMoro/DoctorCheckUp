@@ -5,15 +5,15 @@ const axios = require('axios');
 const app = express();
 app.use(bodyParser.json());
 
-const gases = []
+const tanques = []
 
 let id = -1
 
-//Cadastra um gás novo
-app.post('/gases/cadastrar', async(req,res) => {
+//Cadastra um tanque novo
+app.post('/tanques/cadastrar', async(req,res) => {
     id++
     const dados = req.body
-    gases[id] = {
+    tanques[id] = {
         id: id ,
         tipo: dados.tipo,
         capacidade: dados.capacidade, 
@@ -23,7 +23,7 @@ app.post('/gases/cadastrar', async(req,res) => {
     //Execução de envio das informações ao barramento
     try{
         await axios.post('http://localhost:10000/eventos' , {
-        tipo: `Gás - ${dados.tipo}`,
+        tipo: `Tanque - ${dados.tipo}`,
             dados: {
                 id,
                 capacidade: dados.capacidade,
@@ -36,48 +36,48 @@ app.post('/gases/cadastrar', async(req,res) => {
         res.status(500).send("Barramento de Eventos indisponível. Tente novamente mais tarde.")
     }
     //Informa ao usuário que oo recurso foi criado
-    res.status(201).send(gases[id])
+    res.status(201).send(tanques[id])
 })
 
-//Lista todos os gases cadastrados
-app.get('/gases', (req,res) =>{
-    //Caso exista gases previamente cadastrados, ele os lista
-    if(gases.length > 0) {
-        res.status(200).send(gases);
+//Lista todos os tanques cadastrados
+app.get('/tanques', (req,res) =>{
+    //Caso exista tanques previamente cadastrados, ele os lista
+    if(tanques.length > 0) {
+        res.status(200).send(tanques);
     } else {
         //Caso contrário informa erro.
-        res.status(404).send("Não há nenhum gás cadastrado no sistema!")
+        res.status(404).send("Não há nenhum tanque cadastrado no sistema!")
     }
 })
 
-//Inativa a produção de um gás
-app.put('/gases/statusProd/:filter/:id', async(req,res) => {
-    const gas = gases[req.params.id]
+//Inativa a produção de um tanque
+app.put('/tanques/statusProd/:filter/:id', async(req,res) => {
+    const tanque = tanques[req.params.id]
     const filtro = req.params.filter
     filtroCaps = filtro.toUpperCase();
     let statusProducao;
 
-    if(gases[req.params.id] == null) {
-        res.status(400).send("O gás solicitado não foi encontrado!")
+    if(tanques[req.params.id] == null) {
+        res.status(400).send("O tanque solicitado não foi encontrado!")
     }
 
     if(filtroCaps != "ATIVO" && filtroCaps != "INATIVO") {
         res.status(400).send("Filtro passado incorretamente. Por favor, revise o filtro enviado!")
-    } else if (filtroCaps == "ATIVO" && gas.statusProducao == "Inativo") {
-        gas.statusProducao = "Ativo"
-    } else if (filtroCaps == "INATIVO" && gas.statusProducao == "Ativo") {
-        gas.statusProducao = "Inativo"
+    } else if (filtroCaps == "ATIVO" && tanque.statusProducao == "Inativo") {
+        tanque.statusProducao = "Ativo"
+    } else if (filtroCaps == "INATIVO" && tanque.statusProducao == "Ativo") {
+        tanque.statusProducao = "Inativo"
     } else {
-        res.status(406).send("O gás já se encontra no status informado")
+        res.status(406).send("O tanque já se encontra no status informado")
     }
     
     try{
         await axios.post('http://localhost:10000/eventos' , {
-        tipo: `Gás - ${gas.tipo}`,
+        tipo: `Tanque - ${tanque.tipo}`,
             dados: {
-                id: gas.id,
-                capacidade: gas.capacidade,
-                temperatura: gas.temperatura,
+                id: tanque.id,
+                capacidade: tanque.capacidade,
+                temperatura: tanque.temperatura,
                 statusProducao: statusProducao
             },
         });
@@ -86,25 +86,25 @@ app.put('/gases/statusProd/:filter/:id', async(req,res) => {
         res.status(500).send("Barramento de Eventos indisponível. Tente novamente mais tarde.")
     }
 
-    res.status(200).send(gas);
+    res.status(200).send(tanque);
 })
 
-//Atualiza as características de um gás
-app.put('/gases/atualizar/:id', async(req,res) => {
+//Atualiza as características de um tanque
+app.put('/tanques/atualizar/:id', async(req,res) => {
     const dados = req.body;
     const dadosProducaoAtualizacao = "Inativo"
 
-    if(gases[req.params.id] != null) {
-        gases[req.params.id] = {
+    if(tanques[req.params.id] != null) {
+        tanques[req.params.id] = {
             id: req.params.id,
             tipo: dados.tipo,
             capacidade: dados.capacidade, 
             temperatura: dados.temperatura,
-            statusProducao: gases[req.params.id].statusProducao
+            statusProducao: tanques[req.params.id].statusProducao
         } 
     } else {
         id++
-        gases[req.params.id] = {
+        tanques[req.params.id] = {
             id: req.params.id,
             tipo: dados.tipo,
             capacidade: dados.capacidade, 
@@ -115,7 +115,7 @@ app.put('/gases/atualizar/:id', async(req,res) => {
 
     try{
         await axios.post('http://localhost:10000/eventos' , {
-        tipo: `Gás - ${dados.tipo}`,
+        tipo: `Tanque - ${dados.tipo}`,
             dados: {
                 id: dados.id,
                 capacidade: dados.capacidade,
@@ -127,9 +127,9 @@ app.put('/gases/atualizar/:id', async(req,res) => {
         //Caso ocorra um erro, uma resposta de que o barramento está indisponível é enviada
         res.status(500).send("Barramento de Eventos indisponível. Tente novamente mais tarde.")
     }
-    res.status(200).send(gases[req.params.id])
+    res.status(200).send(tanques[req.params.id])
 })
 
 app.listen(2000, () => {
-    console.log('Gases. Porta 2000')
+    console.log('Tanques. Porta 2000')
 });
