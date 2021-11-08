@@ -8,10 +8,22 @@ const app = express()
 app.use(express.json())
 
 //middleware, permite acessar o corpo (req.body) e tratá-lo como um objeto JSON
-
 const axios = require('axios')
-const maquinas = {}
+const maquinas = []
 contador = 0
+
+const funcoes = {
+    TesteRealizado: (teste) => {
+        let descricao = teste.body.dados.descricao
+
+        if(descricao[0].includes("URGENTE!")) {
+            maquinas[teste.body.dados.maquinaId].statusFuncionamento = "Inativo"
+        } else if(descricao[0].includes("Máquina funcionando") && maquinas[teste.body.dados.maquinaId].statusFuncionamento == "Inativo") {
+            maquinas[teste.body.dados.maquinaId].statusFuncionamento = "Ativo"
+        }
+    }
+}
+
 //Read de todas as maquinas 
 app.get('/maquinas', (req, res) => {
     res.status(200).send(maquinas)
@@ -22,7 +34,7 @@ app.get('/maquinas', (req, res) => {
 app.post ('/maquinas', async (req, res) => {
     contador++
     const {idFilial} = req.body
-    maquinas[contador] = {contador: contador, idFilial: idFilial}
+    maquinas[contador] = {contador: contador, idFilial: idFilial, statusFuncionamento: "Ativo"}
     await axios.post('http://localhost:10000/eventos', {
         tipo: "MaquinaAdicionada",
         dados: {
@@ -35,9 +47,10 @@ app.post ('/maquinas', async (req, res) => {
 app.post('/eventos', (req, res) => {
     try{
         console.log(req.body)
+        funcoes[req.body.tipo](req)
     }
     catch (e){}
     res.status(204).end()
 })
 
-app.listen (4000, () => console.log ("Maquinas. Porta 4000"))
+app.listen (4000, () => console.log ("Máquinas. Porta 4000"))
