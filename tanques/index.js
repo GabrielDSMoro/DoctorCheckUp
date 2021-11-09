@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const mysql = require('mysql2')
 
 const app = express();
 app.use(bodyParser.json());
@@ -129,6 +130,8 @@ app.put('/tanques/atualizar/:id', async(req,res) => {
     }
     res.status(200).send(tanques[req.params.id])
 })
+
+
 
 app.listen(2000, () => {
     console.log('Tanques. Porta 2000')
