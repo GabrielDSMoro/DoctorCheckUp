@@ -1,6 +1,9 @@
 //npm install axios express cors
 //npm install nodemon --save-der
 //npm start
+//npm install dotenv
+
+
 
 const express = require ('express')
 // const bodyParser = require ('body-parser')
@@ -10,64 +13,70 @@ app.use(express.json())
 //middleware, permite acessar o corpo (req.body) e tratá-lo como um objeto JSON
 const axios = require('axios')
 const mysql = require('mysql2')
-const maquinas = {}
-contador = 0
+
+//LUCAS - COMENTOU AQUI POIS HÁ OUTRAS CONST COM O MESMO NOME
+//const maquinas = {}
+//contador = 0
+
+
+//CONTROLA ACESSO AO BANCO DE DADOS
+require('dotenv').config()
+const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
 
 
 //LUCAS CRIOU AQUI
-//CONSULTA
+//CONSULTAR MAQUINAS NO BANCO 
 app.get('/maquinas', (req, res) => {
 
     //CONEXÃO BANCO DE DADOS
     const connection = mysql.createConnection({
-        host: '',
-        user: '',
-        database: '',
-        password: ''
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD
     })
 
     //CONSULTAR NO BANCO DE DADOS
     connection.query('SELECT * FROM tb_maquinas', (err, results, fields) => {
 
-        console.log(results)
-        console.log(fields)
+        //console.log(results)
         res.send(results)
     })
 })
 
-//INSERT
+//CADASTRAR MAQUINAS NO BANCO DE DADOS
 app.post('/maquinas', (req, res) => {
 
     //CONEXÃO BANCO DE DADOS
     const connection = mysql.createConnection({
-        host: '',
-        user: '',
-        database: '',
-        password: ''
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD
     })
     //INSERIR NO BANCO DE DADOS
+    const idfilial = req.body.idFilial
     const status = req.body.status
     
-    const sql = "INSERT INTO tb_maquinas (status) VALUES (?)"
+    const sql = "INSERT INTO tb_maquinas (status, id_filial) VALUES (?, ?)"
 
-    connection.query(sql,[status], (err, results, fields) => {
+    connection.query(sql,[status, idfilial], (err, results, fields) => {
 
         console.log(results)
-        console.log(fields)
-        res.send('post ok')
+        res.send('Inseriu nova Máquina')
     })
 
 })
 
-//UPDATE
+//ATUALIZAR MAQUINAS DADOS NO BANCO
 app.put('/maquinas', (req, res) => {
 
     //CONEXÃO BANCO DE DADOS
     const connection = mysql.createConnection({
-        host: '',
-        user: '',
-        database: '',
-        password: ''
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD
     })
     //UPDATE NO BANCO DE DADOS
     const statusAlterado = req.body.statusAlterado
@@ -79,7 +88,7 @@ app.put('/maquinas', (req, res) => {
 
         console.log(results)
         //console.log(fields)
-        res.send('post ok')
+        res.send('Post alterou o Status da Máquina')
     })
 
 })
@@ -104,9 +113,9 @@ const funcoes = {
 }
 
 //Read de todas as maquinas 
-app.get('/maquinas', (req, res) => {
-    res.status(200).send(maquinas)
-})
+//app.get('/maquinas', (req, res) => {
+//    res.status(200).send(maquinas)
+//s})
 //Criação das maquinas dentro do sistema
 //por motivos de segurança do funcionamento dos sistemas APENAS dado idFilial pode ser adicionado e alterado
 // NENHUMA maquina pode ser excluida

@@ -1,3 +1,6 @@
+//CONTROLA ACESSO AO BANCO DE DADOS
+//require ('dotenv').config()
+
 const express = require ('express')
 const bodyParser = require ('body-parser')
 const mysql = require('mysql2')
@@ -8,26 +11,28 @@ const axios = require ('axios')
 const moment = require('moment');
 
 
-const erro = 10;
-const maquinasCadastradas = []
+// const erro = 10;
+// const maquinasCadastradas = []
 
-const funcoes = {
-    MaquinaAdicionada: (maquinas) => {
-        maquinasCadastradas.push(maquinas)
-        console.log(maquinas.contador)
-    }
-}
+// const funcoes = {
+//     MaquinaAdicionada: (maquinas) => {
+//         maquinasCadastradas.push(maquinas)
+//         console.log(maquinas.contador)
+//     }
+// }
 // //middleware, permite acessar o corpo (req.body) e tratá-lo como um objeto JSON
 // app.use(bodyParser.json())
 
-const sensor = []
-let idSensor = -1
+// const sensor = []
+// let idSensor = -1
 
+/*
 app.get('/sensor', (req,res) => {
     res.status(200).send(sensor)
-})
+})*/
 
 //Cadastra sensor
+/*
 app.post('/sensor', async(req,res) => {
     idSensor++
     const dadosSensor = req.body
@@ -49,11 +54,14 @@ app.post('/sensor', async(req,res) => {
     }
     res.status(201).send(sensor[idSensor])
 }
-});
+});*/
 
 
-let testeId = 0;
-cron.schedule("*/30 * * * * *", () => { 
+// let testeId = 0;
+// cron.schedule("*/30 * * * * *", () => { 
+    
+    /*
+
     console.log('Tentativa de execução de testes')
     if(sensor.length > 0) {
         testeId++
@@ -116,9 +124,9 @@ cron.schedule("*/30 * * * * *", () => {
             })
         }
     }
-});
+});*/
 
-
+/*
 app.post('/eventos', (req, res) => {
     try{
         console.log(req.body)
@@ -126,6 +134,55 @@ app.post('/eventos', (req, res) => {
     }
     catch (e){}
     res.status(204).end()
+})*/
+
+//CONSULTA DE TODOS OS SENSORES NO BANDO DE DADOS
+app.get('/sensor', (req, res)=>{
+    const connection = mysql.createConnection({
+        // host: DB_HOST,
+        // user: DB_USER,
+        // database: DB_DATABASE,
+        // password: DB_PASSWORD
+        host: 'localhost',
+        user: 'root',
+        database: 'doctor_checkup',
+        password: 'Lof16122001!'
+    })
+
+    //CONSULTAR NO BANCO DE DADOS
+    connection.query('SELECT * FROM tb_sensor', (err, results, fields) => {
+        console.log(err)
+        console.log(results)
+            
+        res.send(results)
+    })
 })
+
+//CADASTRAR SENSORES NO BANCO DE DADOS
+app.post('/sensor',(req, res) =>{
+
+    //CONEXÃO BANCO DE DADOS
+    const connection = mysql.createConnection({
+        // host: DB_HOST,
+        // user: DB_USER,
+        // database: DB_DATABASE,
+        // password: DB_PASSWORD
+        host: 'localhost',
+        user: 'root',
+        database: 'doctor_checkup',
+        password: 'Lof16122001!' 
+    })
+
+    const idMaqSensor = req.body.idMaqSensor
+
+    const sql = "INSERT INTO tb_sensor (id_maquina_sen) VALUES (?)"
+
+    connection.query(sql,[idMaqSensor], (err, results, fields) => {
+
+        console.log(results)
+        res.send('Inseriu 1 Sensor Novo')
+    }) 
+})
+
 
 app.listen(6000, () => console.log("Sensor, porta 6000"))
