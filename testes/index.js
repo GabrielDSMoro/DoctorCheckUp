@@ -40,10 +40,10 @@ app.get('/testes', (req,res) => {
         // user: DB_USER,
         // database: DB_DATABASE,
         // password: DB_PASSWORD
-        host: 'localhost',
-        user: 'root',
-        database: 'doctor_checkup',
-        password: 'Lof16122001!'
+        host: '',
+        user: '',
+        database: '',
+        password: ''
     })
     //CONSULTAR NO BANCO DE DADOS
     connection.query('SELECT * FROM tb_testes', (err, results, fields) => {
@@ -130,10 +130,10 @@ app.post('/testes', (req, res) => {
         // user: DB_USER,
         // database: DB_DATABASE,
         // password: DB_PASSWORD
-        host: 'localhost',
-        user: 'root',
-        database: 'doctor_checkup',
-        password: 'Lof16122001!'
+        host: '',
+        user: '',
+        database: '',
+        password: ''
     })
 
     const idMaqTeste = req.body.idMaqTeste

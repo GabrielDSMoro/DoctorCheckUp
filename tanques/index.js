@@ -68,10 +68,10 @@ app.get('/tanques',(req, res) =>{
         // user: DB_USER,
         // database: DB_DATABASE,
         // password: DB_PASSWORD
-        host: 'localhost',
-        user: 'root',
-        database: 'doctor_checkup',
-        password: 'Lof16122001!'
+        host: '',
+        user: '',
+        database: '',
+        password: ''
     })
 
     //CONSULTAR NO BANCO DE DADOS
@@ -174,10 +174,10 @@ app.post('/tanques',(req, res) =>{
         // user: DB_USER,
         // database: DB_DATABASE,
         // password: DB_PASSWORD
-        host: 'localhost',
-        user: 'root',
-        database: 'doctor_checkup',
-        password: 'Lof16122001!' 
+        host: '',
+        user: '',
+        database: '',
+        password: '' 
     })
 
     const tipo = req.body.tipo
