@@ -2,25 +2,18 @@
 //npm install nodemon --save-der
 //npm start
 //npm install dotenv
-
-
-
 const express = require ('express')
-// const bodyParser = require ('body-parser')
 const app = express()
 app.use(express.json())
 
 //middleware, permite acessar o corpo (req.body) e tratá-lo como um objeto JSON
 const axios = require('axios')
 const mysql = require('mysql2')
+require ('dotenv').config()
 
 //LUCAS - COMENTOU AQUI POIS HÁ OUTRAS CONST COM O MESMO NOME
-//const maquinas = {}
-//contador = 0
-
 
 //CONTROLA ACESSO AO BANCO DE DADOS
-require('dotenv').config()
 const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
 
 
@@ -37,10 +30,15 @@ app.get('/maquinas', (req, res) => {
     })
 
     //CONSULTAR NO BANCO DE DADOS
-    connection.query('SELECT * FROM tb_maquinas', (err, results, fields) => {
-
+    connection.query('SELECT * FROM tbmaquinas', (err, results, fields) => {
         //console.log(results)
-        res.send(results)
+
+        if(results.length == 0) {
+            res.status(404).send("Nenhuma máquina foi cadastrada!")
+        } else {
+            console.log(results.map((row) => {return row.status}))
+            res.status(200).send(results)
+        }
     })
 })
 
@@ -58,18 +56,21 @@ app.post('/maquinas', (req, res) => {
     const idfilial = req.body.idFilial
     const status = req.body.status
     
-    const sql = "INSERT INTO tb_maquinas (status, id_filial) VALUES (?, ?)"
+    const sql = "INSERT INTO tbmaquinas (status, Id_Filial) VALUES (?, ?)"
 
     connection.query(sql,[status, idfilial], (err, results, fields) => {
 
-        console.log(results)
-        res.send('Inseriu nova Máquina')
+        if(err == null) {
+            res.status(200).send(`Máquina cadastrada com sucesso!
+            \nInformações: \nId da Filial: ${idfilial}\nStatus: ${status}`)
+        } else {
+            res.status(500).send("Erro ao cadastrar máquina no banco de dados");
+        }
     })
-
 })
 
 //ATUALIZAR MAQUINAS DADOS NO BANCO
-app.put('/maquinas', (req, res) => {
+app.put('/maquinas/:id', (req, res) => {
 
     //CONEXÃO BANCO DE DADOS
     const connection = mysql.createConnection({
@@ -79,73 +80,71 @@ app.put('/maquinas', (req, res) => {
         password: DB_PASSWORD
     })
     //UPDATE NO BANCO DE DADOS
-    const statusAlterado = req.body.statusAlterado
-    const idmaquina = req.body.idmaquina
+    const statusAlterado = req.body.status
+    const idmaquina = parseInt(req.params.id)
+    const idFilial = req.body.idFilial
+    
+    const sql = `UPDATE tbmaquinas SET status = (?), Id_Filial = (?) WHERE Id_Maquina =( ? )`
 
-    const sql = `UPDATE tb_maquinas SET status=( ? ) WHERE id_maquina=( ? )`
-
-    connection.query(sql,[statusAlterado, idmaquina], (err, results, fields) => {
-
-        console.log(results)
-        //console.log(fields)
-        res.send('Post alterou o Status da Máquina')
+    connection.query(sql,[statusAlterado, idFilial, idmaquina], (err, results, fields) => {
+        if(err == null) {
+            res.status(200).send(`Máquina atualizada com sucesso!
+            \nInformações: \nId da Filial: ${idFilial}\nStatus: ${statusAlterado}`)
+        } else {
+            console.log(err)
+            res.status(500).send("Erro ao alterar informações de máquina no banco de dados");
+        }
     })
 
 })
 
-
-
-
-
-const maquinas = []
-contador = 0
-
 const funcoes = {
     TesteRealizado: (teste) => {
         let descricao = teste.body.dados.descricao
-
+        let maquinaId = teste.body.dados.maquinaId
+        const connection = mysql.createConnection({
+            host: DB_HOST,
+            user: DB_USER,
+            database: DB_DATABASE,
+            password: DB_PASSWORD
+        })
+        console.log(descricao)
         if(descricao[0].includes("URGENTE!")) {
-            maquinas[teste.body.dados.maquinaId].statusFuncionamento = "Inativo"
-        } else if(descricao[0].includes("Máquina funcionando") && maquinas[teste.body.dados.maquinaId].statusFuncionamento == "Inativo") {
-            maquinas[teste.body.dados.maquinaId].statusFuncionamento = "Ativo"
+            const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
+            let status = 'Inativo'
+            connection.query(sql,[status, maquinaId], (err, results, fields) => {})
+            console.log(`Máquina ${maquinaId} está com o status Inativo`)
+        } else if(descricao[0].includes("Máquina funcionando")) {
+            const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
+            let status = 'Ativo'
+            connection.query(sql,[status, maquinaId], (err, results, fields) => {})
+            console.log(`Máquina ${maquinaId} está com o status Ativo`)
         }
+    },
+
+    ConsultaMaquinas: (a) => {
+        const connection = mysql.createConnection({
+            host: DB_HOST,
+            user: DB_USER,
+            database: DB_DATABASE,
+            password: DB_PASSWORD
+        })
+        const sql = "SELECT * FROM tbmaquinas"
+        connection.query(sql, (err, results, fields) => {
+            axios.post('http://localhost:10000/eventos', {
+                tipo: "MaquinasConsultadas",
+                dados: results 
+            })
+        })
+        connection.end()
+    }}
+
+app.post('/eventos', (req, res) => {
+    try{
+        funcoes[req.body.tipo](req)
     }
-}
-
-//Read de todas as maquinas 
-//app.get('/maquinas', (req, res) => {
-//    res.status(200).send(maquinas)
-//s})
-//Criação das maquinas dentro do sistema
-//por motivos de segurança do funcionamento dos sistemas APENAS dado idFilial pode ser adicionado e alterado
-// NENHUMA maquina pode ser excluida
-
-
-//app.post ('/maquinas', async (req, res) => {
-//    contador++
-//    const {idFilial} = req.body
- //   maquinas[contador] = {contador: contador, idFilial: idFilial}
-  ///  await axios.post('http://localhost:10000/eventos', {
-    //    tipo: "MaquinaAdicionada",
-     //   dados: {
-       //     contador, idFilial
-       // }
-    ////})
-   /// res.status(201).send(maquinas[contador])
-///})
-
-
-
-
-
-
-
-///app.post('/eventos', (req, res) => {
-///    try{
-//        console.log(req.body)
-///   }
- ///   catch (e){}
- ///   res.status(204).end()
-///})
+    catch (e){}
+    res.status(204).end()
+})
 
 app.listen (4000, () => console.log ("Máquinas. Porta 4000"))
