@@ -8,13 +8,197 @@ const { application } = require('express');
 const app = express();
 app.use(bodyParser.json());
 
-const tanques = []
-
-let id = -1
-
 //CONTROLA ACESSO AO BANCO DE DADOS
-//require('dotenv').config()
-//const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
+require('dotenv').config()
+const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
+
+
+
+//LUCAS CRIOU AQUI
+//LISTAR TODOS OS TANQUES NO BANCO DE DADOS
+app.get('/tanques',(req, res) =>{
+
+    //CONEXÃO BANCO DE DADOS
+    const connection = mysql.createConnection({
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD
+    })
+
+    //CONSULTAR NO BANCO DE DADOS
+    connection.query('SELECT * FROM tbtanques', (err, results, fields) => {
+        if(results.length == 0) {
+            res.status(404).send("Nenhum tanque foi cadastrado!")
+        } else {
+            res.status(200).send(results)
+        }
+    })
+})
+
+//CADASTRAR TANQUES NO BANCO DE DADOS
+app.post('/tanques/cadastrar',(req, res) =>{
+
+    //CONEXÃO BANCO DE DADOS
+    const connection = mysql.createConnection({
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD 
+    })
+
+    const tipo = req.body.tipo
+    const capacidade = req.body.capacidade
+    const temperatura = req.body.temperatura
+    const statusProducao = req.body.statusProducao
+
+    if(capacidade < 0) {
+        res.status(400).send("Capacidade marcada incorretamente!")
+    }
+
+    const sql = "INSERT INTO tbtanques (tipo, capacidade, temperatura, status) VALUES (?, ?, ?, ?)"
+
+    connection.query(sql,[tipo, capacidade, temperatura, statusProducao], (err, results, fields) => {
+
+        if(err == null) {
+            res.status(200).send(`Tanque cadastrado com sucesso!
+            \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade} L
+            Temperatura: ${temperatura}ºC \nStatus: ${statusProducao}`)
+        } else {
+            res.status(500).send("Erro ao cadastrar tanque no banco de dados");
+        }
+    }) 
+})
+
+
+//ATUALIZAR TANQUE NO BANCO DE DADOS
+app.put('/tanques/atualizar/:id', (req, res) => {
+
+    //CONEXÃO BANCO DE DADOS
+    const connection = mysql.createConnection({
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD
+    })
+    //UPDATE NO BANCO DE DADOS
+    const idtanque = req.params.id
+    let tipo = req.body.tipo
+    let capacidade = req.body.capacidade
+    let temperatura = req.body.temperatura
+    let status = req.body.status
+
+    console.log(status)
+    const sql = `SELECT * FROM tbtanques WHERE Id_Tanques=(?)`
+    connection.query(sql,[idtanque], (err, results, fields) => {
+    
+        if(tipo == null) {
+            results.map((row) => {tipo = row.tipo})
+        }
+
+        if(capacidade == null) {
+            results.map((row) => {capacidade = row.capacidade})
+        }
+
+        if(temperatura == null) {
+            results.map((row) => {temperatura = row.temperatura})
+        }
+
+        if(status == null) {
+            results.map((row) => {status = row.status})
+        }
+    })
+
+    console.log(status)
+
+
+    const sqlAtualiza = `UPDATE tbtanques SET tipo=(?), capacidade=(?), temperatura=(?), status=(?) WHERE Id_Tanques=(?)`
+
+    connection.query(sqlAtualiza,[tipo, capacidade, temperatura, 
+                        status,idtanque], (err, results, fields) => {
+
+        if(err == null) {
+            res.status(200).send(`Tanque atualizado com sucesso!
+            \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade}
+            \nTemperatura: ${temperatura}ºC \nStatus: ${status}`)
+        } else {
+            console.log(err)
+            res.status(500).send("Erro ao atualizar tanque no banco de dados");
+        }
+    })
+
+})
+
+ app.put('/tanques/:id/status/:status', (req, res) => {
+
+    //CONEXÃO BANCO DE DADOS
+    const connection = mysql.createConnection({
+        host: DB_HOST,
+        user: DB_USER,
+        database: DB_DATABASE,
+        password: DB_PASSWORD   
+    })
+    //UPDATE NO BANCO DE DADOS
+    const idtanque = req.params.id
+    let statusNovo = req.params.status
+    let temperatura
+    let tipo
+    let capacidade
+    let statusAntigo
+    let sql = `SELECT * FROM tbtanques WHERE Id_Tanques=(?)`
+    console.log(statusNovo)
+    console.log(idtanque)
+    connection.query(sql,[idtanque], (err, results, fields) => {
+        console.log(results)
+        if(statusAntigo == null) {
+            statusAntigo = results.map((row) => {return row.status})
+        }
+        results.map((row) => {tipo = row.tipo})
+        results.map((row) => {capacidade = row.capacidade})
+        results.map((row) => {temperatura = row.temperatura})
+    })
+
+    console.log(statusAntigo)
+    console.log(tipo)
+    console.log(capacidade)
+    console.log(temperatura)
+
+    if(statusNovo.toUpperCase() != "ATIVO" && statusNovo.toUpperCase() != "INATIVO") {
+        console.log('bateu aqui 1')
+        res.status(400).send("Filtro passado incorretamente. Por favor, revise o filtro enviado!")
+    } else if(statusNovo.toUpperCase() == "ATIVO" && statusAntigo == "Inativo") {
+        console.log('bateu aqui 2')
+        statusNovo = "Ativo"
+    } else if(statusNovo.toUpperCase == "INATIVO" && statusAntigo == "Ativo") {
+        console.log('bateu aqui 3')
+        statusNovo = "Inativo"
+    } else {
+        console.log('bateu aqui 4')
+        console.log(statusNovo) 
+        console.log(statusAntigo)
+        res.status(400).send("Filtro passado incorretamente. Por favor, revise o filtro enviado!") 
+    } 
+    sql = `UPDATE tbtanques status=(?) WHERE Id_Tanque=(?)`
+
+    console.log('chega aqui')
+    connection.query(sql,[statusNovo, idtanque], (err, results, fields) => {
+
+        if(err == null) {
+            res.status(200).send(`Tanque atualizado com sucesso!
+            \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade}
+            \nTemperatura: ${temperatura}ºC \nStatus: ${statusNovo}`)
+        } else {
+            res.status(500).send("Erro ao atualizar tanque no banco de dados");
+        }
+    })
+
+})
+
+
+
+app.listen(2000, () => {
+    console.log('Tanques. Porta 2000')
+});
 
 
 // //Cadastra um tanque novo
@@ -57,33 +241,6 @@ let id = -1
 //         res.status(404).send("Não há nenhum tanque cadastrado no sistema!")
 //     }
 // })
-
-//LUCAS CRIOU AQUI
-//LISTAR TODOS OS TANQUES NO BNCO DE DADOS
-app.get('/tanques',(req, res) =>{
-
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        // host: DB_HOST,
-        // user: DB_USER,
-        // database: DB_DATABASE,
-        // password: DB_PASSWORD
-        host: '',
-        user: '',
-        database: '',
-        password: ''
-    })
-
-    //CONSULTAR NO BANCO DE DADOS
-    connection.query('SELECT * FROM tb_tanques', (err, results, fields) => {
-
-        console.log(err)
-        console.log(results)
-        
-        res.send(results)
-    })
-})
-
 
 // //Inativa a produção de um tanque
 // app.put('/tanques/statusProd/:filter/:id', async(req,res) => {
@@ -164,74 +321,3 @@ app.get('/tanques',(req, res) =>{
 //     }
 //     res.status(200).send(tanques[req.params.id])
 // })
-
-//CADASTRAR TANQUES NO BANCO DE DADOS
-app.post('/tanques',(req, res) =>{
-
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        // host: DB_HOST,
-        // user: DB_USER,
-        // database: DB_DATABASE,
-        // password: DB_PASSWORD
-        host: '',
-        user: '',
-        database: '',
-        password: '' 
-    })
-
-    const tipo = req.body.tipo
-    const capacidade = req.body.capacidade
-    const temperatura = req.body.temperatura
-    const status = req.body.status
-
-    const sql = "INSERT INTO tb_tanques (tipo, capacidade, temperatura, status) VALUES (?, ?, ?, ?)"
-
-    connection.query(sql,[tipo, capacidade, temperatura, status], (err, results, fields) => {
-
-        console.log(err)
-        console.log(results)
-        res.send('Inseriu 1 tanque Novo')
-    }) 
-})
-
-
-//ATUALIZAR TANQUE NO BANCO DE DADOS
-app.put('/tanques', (req, res) => {
-
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        // host: DB_HOST,
-        // user: DB_USER,
-        // database: DB_DATABASE,
-        // password: DB_PASSWORD
-        host: 'localhost',
-        user: 'root',
-        database: 'doctor_checkup',
-        password: 'Lof16122001!' 
-    })
-    //UPDATE NO BANCO DE DADOS
-    const idtanquealt = req.body.idtanquealt
-    const tipoalt = req.body.tipoalt
-    const capacidadealt = req.body.capacidadealt
-    const temperaturaalt = req.body.temperaturaalt
-    const statusalt = req.body.statusalt
-
-    const sql = `UPDATE tb_tanques SET tipo=(?), capacidade=(?),
-                temperatura=(?), status=(?) WHERE id_tanque=(?)`
-
-    connection.query(sql,[tipoalt, capacidadealt, temperaturaalt, 
-                        statusalt, idtanquealt], (err, results, fields) => {
-
-        console.log(results)
-        //console.log(fields)
-        res.send('PUT alterou o Status do Tanque')
-    })
-
-})
-
-
-
-app.listen(2000, () => {
-    console.log('Tanques. Porta 2000')
-});
