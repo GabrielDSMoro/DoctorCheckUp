@@ -10,7 +10,19 @@ const cron = require('node-cron');
 const axios = require ('axios')
 const moment = require('moment');
 
+const {DB_USER,DB_PASSWORD,DB_DATABASE,PORT,DB_HOST} = process.env
 
+//CRIANDO O POOL
+const pool = mysql.createPool({
+    
+    host: DB_HOST,
+    user: DB_USER,
+    database: DB_DATABASE,
+    password: DB_PASSWORD,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+})
 
 let maquinasCadastradas = []
 
@@ -20,7 +32,7 @@ let maquinasCadastradas = []
      }
  }
 
-const {DB_USER,DB_PASSWORD,DB_DATABASE,PORT,DB_HOST} = process.env
+
 
 cron.schedule("*/2 * * * * *", () => {
     axios.post('http://localhost:10000/eventos' , {
@@ -31,20 +43,13 @@ cron.schedule("*/2 * * * * *", () => {
 
 
 cron.schedule("*/30 * * * * *", () => { 
-    
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
 
     //CONSULTAR NO BANCO DE DADOS
-    connection.query('SELECT * FROM tbsensores', (err, results, fields) => {
+    pool.query('SELECT * FROM tbsensores', (err, results, fields) => {
         sensor = results
         
     })
-    connection.end();
+    //pool.end();
     console.log('Tentativa de execução de testes')
 
     if(sensor.length > 0) {
@@ -124,37 +129,22 @@ cron.schedule("*/30 * * * * *", () => {
 
 //CONSULTA DE TODOS OS SENSORES NO BANCO DE DADOS
 app.get('/sensor', (req, res)=>{
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
 
     //CONSULTAR NO BANCO DE DADOS
-    connection.query('SELECT * FROM tbsensores', (err, results, fields) => {
-        //console.log(results)
+    pool.query('SELECT * FROM tbsensores', (err, results, fields) => {
+        console.log(results)
 
         if(results.length == 0) {
-            res.status(404).send("Nenhuma sensor foi cadastrado!")
+           res.status(404).send("Nenhuma sensor foi cadastrado!")
         } else {
             res.status(200).send(results)
         }
     })
-
-
 })
 
 //CADASTRAR SENSORES NO BANCO DE DADOS
 app.post('/sensor',async(req, res) =>{
 
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
 
     console.log(maquinasCadastradas)
     const idMaqSensor = req.body.idMaquina
@@ -171,7 +161,7 @@ app.post('/sensor',async(req, res) =>{
 
         const sql = "INSERT INTO tbsensores (Id_Maquina) VALUES (?)"
 
-        connection.query(sql,[idMaqSensor], (err, results, fields) => {
+        pool.query(sql,[idMaqSensor], (err, results, fields) => {
 
             if(!err) {
                 res.status(202).send(`Sensor criado com sucesso!
