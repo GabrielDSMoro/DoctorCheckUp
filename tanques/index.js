@@ -10,11 +10,11 @@ app.use(bodyParser.json());
 
 //CONTROLA ACESSO AO BANCO DE DADOS
 require('dotenv').config()
-const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = process.env
 
 //CRIANDO O POOL
 const pool = mysql.createPool({
-    
+
     host: DB_HOST,
     user: DB_USER,
     database: DB_DATABASE,
@@ -26,11 +26,11 @@ const pool = mysql.createPool({
 
 //LUCAS CRIOU AQUI
 //LISTAR TODOS OS TANQUES NO BANCO DE DADOS
-app.get('/tanques',(req, res) =>{
+app.get('/tanques', (req, res) => {
 
     //CONSULTAR NO BANCO DE DADOS
     pool.query('SELECT * FROM tbtanques', (err, results, fields) => {
-        if(results.length == 0) {
+        if (results.length == 0) {
             res.status(404).send("Nenhum tanque foi cadastrado!")
         } else {
             res.status(200).send(results)
@@ -39,29 +39,29 @@ app.get('/tanques',(req, res) =>{
 })
 
 //CADASTRAR TANQUES NO BANCO DE DADOS
-app.post('/tanques/cadastrar',(req, res) =>{
+app.post('/tanques/cadastrar', (req, res) => {
 
     const tipo = req.body.tipo
     const capacidade = req.body.capacidade
     const temperatura = req.body.temperatura
     const statusProducao = req.body.statusProducao
 
-    if(capacidade < 0) {
+    if (capacidade < 0) {
         res.status(400).send("Capacidade marcada incorretamente!")
     }
 
     const sql = "INSERT INTO tbtanques (tipo, capacidade, temperatura, status) VALUES (?, ?, ?, ?)"
 
-    pool.query(sql,[tipo, capacidade, temperatura, statusProducao], (err, results, fields) => {
+    pool.query(sql, [tipo, capacidade, temperatura, statusProducao], (err, results, fields) => {
 
-        if(err == null) {
+        if (err == null) {
             res.status(200).send(`Tanque cadastrado com sucesso!
             \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade} L
             Temperatura: ${temperatura}ºC \nStatus: ${statusProducao}`)
         } else {
             res.status(500).send("Erro ao cadastrar tanque no banco de dados");
         }
-    }) 
+    })
 })
 
 
@@ -105,7 +105,6 @@ app.put("/tanques/atualizar/:idTanque", (req, res) => {
             \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade}
             \nTemperatura: ${temperatura}ºC \nStatus: ${status}`);
                 } else {
-                    console.log(err);
                     res.status(500).send("Erro ao atualizar tanque no banco de dados");
                 }
             }
@@ -146,15 +145,13 @@ app.put("/tanques/:id/status/:status", (req, res) => {
         } else if (statusNovo.toUpperCase() == "INATIVO" && statusAntigo == "Inativo") {
             res.status(400).send("O tanque já se encontra no estado desejado");
         } else if (statusNovo.toUpperCase() == "ATIVO" && statusAntigo == "Ativo") {
-            console.log("bateu aqui 5")
             res.status(400).send("O tanque já se encontra no estado desejado");
         }
-        if (statusNovo === "Ativo" && statusAntigo == "Inativo" || statusNovo === "Inativo"  && statusAntigo == "Ativo") {
+        if (statusNovo === "Ativo" && statusAntigo == "Inativo" || statusNovo === "Inativo" && statusAntigo == "Ativo") {
             pool.query(
                 sqlUpdate,
                 [statusNovo, idtanque],
                 (err, results, fields) => {
-                    console.log(err)
                     if (err == null) {
                         res.status(200).send(`Tanque atualizado com sucesso!
             \nInformações: \nTipo: ${tipo}\nCapacidade: ${capacidade}
@@ -235,7 +232,7 @@ app.listen(2000, () => {
 //     } else {
 //         res.status(406).send("O tanque já se encontra no status informado")
 //     }
-    
+
 //     try{
 //         await axios.post('http://localhost:10000/eventos' , {
 //         tipo: `Tanque - ${tanque.tipo}`,
