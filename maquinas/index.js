@@ -2,23 +2,23 @@
 //npm install nodemon --save-der
 //npm start
 //npm install dotenv
-const express = require ('express')
+const express = require('express')
 const app = express()
 app.use(express.json())
 
 //middleware, permite acessar o corpo (req.body) e tratá-lo como um objeto JSON
 const axios = require('axios')
 const mysql = require('mysql2')
-require ('dotenv').config()
+require('dotenv').config()
 
 //LUCAS - COMENTOU AQUI POIS HÁ OUTRAS CONST COM O MESMO NOME
 
 //CONTROLA ACESSO AO BANCO DE DADOS
-const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = process.env
 
 //CRIANDO O POOL
 const pool = mysql.createPool({
-    
+
     host: DB_HOST,
     user: DB_USER,
     database: DB_DATABASE,
@@ -35,12 +35,10 @@ app.get('/maquinas', (req, res) => {
     //CONSULTAR NO BANCO DE DADOS
     //connection
     pool.query('SELECT * FROM tbmaquinas', (err, results, fields) => {
-        
-        //console.log(results)
-        if(results.length == 0) {
+        if (results.length == 0) {
             res.status(404).send("Nenhuma máquina foi cadastrada!")
         } else {
-            console.log(results.map((row) => {return row.status}))
+            console.log(results.map((row) => { return row.status }))
             res.status(200).send(results)
         }
     })
@@ -51,14 +49,14 @@ app.post('/maquinas', (req, res) => {
 
 
     //INSERIR NO BANCO DE DADOS
-    const idfilial = req.body.idfilial
+    const idfilial = req.body.idFilial
     const status = req.body.status
-    
+
     const sql = "INSERT INTO tbmaquinas (status, Id_Filial) VALUES (?, ?)"
 
-    pool.query(sql,[status, idfilial], (err, results, fields) => {
+    pool.query(sql, [status, idfilial], (err, results, fields) => {
 
-        if(err == null) {
+        if (err == null) {
             res.status(200).send(`Máquina cadastrada com sucesso!
             \nInformações: \nId da Filial: ${idfilial}\nStatus: ${status}`)
         } else {
@@ -74,12 +72,12 @@ app.put('/maquinas/:id', (req, res) => {
     const statusAlterado = req.body.statusAlterado
     const idmaquina = parseInt(req.params.id)
     const idFilial = req.body.idFilial
-    
-    const sql = `UPDATE tbmaquinas SET status = (?), Id_Filial = (?) WHERE Id_Maquina =( ? )`
+
+    const sql = `UPDATE tbmaquinas SET Status=(?),Id_Filial = (?) WHERE Id_Maquina =( ? )`
 
     //CONEXÃO BANCO DE DADOS
-    pool.query(sql,[statusAlterado, idFilial, idmaquina], (err, results, fields) => {
-        if(err == null) {
+    pool.query(sql, [statusAlterado, idFilial, idmaquina], (err, results, fields) => {
+        if (err == null) {
             res.status(200).send(`Máquina atualizada com sucesso!
             \nInformações: \nId da Filial: ${idFilial}\nStatus: ${statusAlterado}`)
         } else {
@@ -94,17 +92,16 @@ const funcoes = {
     TesteRealizado: (teste) => {
         let descricao = teste.body.dados.descricao
         let maquinaId = teste.body.dados.maquinaId
-        
-        console.log(descricao)
-        if(descricao[0].includes("URGENTE!")) {
+
+        if (descricao[0].includes("URGENTE!")) {
             const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
             let status = 'Inativo'
-            pool.query(sql,[status, maquinaId], (err, results, fields) => {})
+            pool.query(sql, [status, maquinaId], (err, results, fields) => { })
             console.log(`Máquina ${maquinaId} está com o status Inativo`)
-        } else if(descricao[0].includes("Máquina funcionando")) {
+        } else if (descricao[0].includes("Máquina funcionando")) {
             const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
             let status = 'Ativo'
-            pool.query(sql,[status, maquinaId], (err, results, fields) => {})
+            pool.query(sql, [status, maquinaId], (err, results, fields) => { })
             console.log(`Máquina ${maquinaId} está com o status Ativo`)
         }
     },
@@ -115,18 +112,19 @@ const funcoes = {
         pool.query(sql, (err, results, fields) => {
             axios.post('http://localhost:10000/eventos', {
                 tipo: "MaquinasConsultadas",
-                dados: results 
+                dados: results
             })
         })
         connection.end()
-    }}
+    }
+}
 
 app.post('/eventos', (req, res) => {
-    try{
+    try {
         funcoes[req.body.tipo](req)
     }
-    catch (e){}
+    catch (e) { }
     res.status(204).end()
 })
 
-app.listen (4000, () => console.log ("Máquinas. Porta 4000"))
+app.listen(4000, () => console.log("Máquinas. Porta 4000"))
