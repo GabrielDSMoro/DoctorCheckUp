@@ -16,23 +16,27 @@ require ('dotenv').config()
 //CONTROLA ACESSO AO BANCO DE DADOS
 const {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE} = process.env
 
+//CRIANDO O POOL
+const pool = mysql.createPool({
+    
+    host: DB_HOST,
+    user: DB_USER,
+    database: DB_DATABASE,
+    password: DB_PASSWORD,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+})
 
 //LUCAS CRIOU AQUI
 //CONSULTAR MAQUINAS NO BANCO 
 app.get('/maquinas', (req, res) => {
 
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
-
     //CONSULTAR NO BANCO DE DADOS
-    connection.query('SELECT * FROM tbmaquinas', (err, results, fields) => {
+    //connection
+    pool.query('SELECT * FROM tbmaquinas', (err, results, fields) => {
+        
         //console.log(results)
-
         if(results.length == 0) {
             res.status(404).send("Nenhuma máquina foi cadastrada!")
         } else {
@@ -45,20 +49,14 @@ app.get('/maquinas', (req, res) => {
 //CADASTRAR MAQUINAS NO BANCO DE DADOS
 app.post('/maquinas', (req, res) => {
 
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
+
     //INSERIR NO BANCO DE DADOS
-    const idfilial = req.body.idFilial
+    const idfilial = req.body.idfilial
     const status = req.body.status
     
     const sql = "INSERT INTO tbmaquinas (status, Id_Filial) VALUES (?, ?)"
 
-    connection.query(sql,[status, idfilial], (err, results, fields) => {
+    pool.query(sql,[status, idfilial], (err, results, fields) => {
 
         if(err == null) {
             res.status(200).send(`Máquina cadastrada com sucesso!
@@ -72,21 +70,15 @@ app.post('/maquinas', (req, res) => {
 //ATUALIZAR MAQUINAS DADOS NO BANCO
 app.put('/maquinas/:id', (req, res) => {
 
-    //CONEXÃO BANCO DE DADOS
-    const connection = mysql.createConnection({
-        host: DB_HOST,
-        user: DB_USER,
-        database: DB_DATABASE,
-        password: DB_PASSWORD
-    })
     //UPDATE NO BANCO DE DADOS
-    const statusAlterado = req.body.status
+    const statusAlterado = req.body.statusAlterado
     const idmaquina = parseInt(req.params.id)
     const idFilial = req.body.idFilial
     
     const sql = `UPDATE tbmaquinas SET status = (?), Id_Filial = (?) WHERE Id_Maquina =( ? )`
 
-    connection.query(sql,[statusAlterado, idFilial, idmaquina], (err, results, fields) => {
+    //CONEXÃO BANCO DE DADOS
+    pool.query(sql,[statusAlterado, idFilial, idmaquina], (err, results, fields) => {
         if(err == null) {
             res.status(200).send(`Máquina atualizada com sucesso!
             \nInformações: \nId da Filial: ${idFilial}\nStatus: ${statusAlterado}`)
@@ -102,35 +94,25 @@ const funcoes = {
     TesteRealizado: (teste) => {
         let descricao = teste.body.dados.descricao
         let maquinaId = teste.body.dados.maquinaId
-        const connection = mysql.createConnection({
-            host: DB_HOST,
-            user: DB_USER,
-            database: DB_DATABASE,
-            password: DB_PASSWORD
-        })
+        
         console.log(descricao)
         if(descricao[0].includes("URGENTE!")) {
             const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
             let status = 'Inativo'
-            connection.query(sql,[status, maquinaId], (err, results, fields) => {})
+            pool.query(sql,[status, maquinaId], (err, results, fields) => {})
             console.log(`Máquina ${maquinaId} está com o status Inativo`)
         } else if(descricao[0].includes("Máquina funcionando")) {
             const sql = `UPDATE tbmaquinas SET status=( ? ) WHERE Id_Maquina=( ? )`
             let status = 'Ativo'
-            connection.query(sql,[status, maquinaId], (err, results, fields) => {})
+            pool.query(sql,[status, maquinaId], (err, results, fields) => {})
             console.log(`Máquina ${maquinaId} está com o status Ativo`)
         }
     },
 
     ConsultaMaquinas: (a) => {
-        const connection = mysql.createConnection({
-            host: DB_HOST,
-            user: DB_USER,
-            database: DB_DATABASE,
-            password: DB_PASSWORD
-        })
+
         const sql = "SELECT * FROM tbmaquinas"
-        connection.query(sql, (err, results, fields) => {
+        pool.query(sql, (err, results, fields) => {
             axios.post('http://localhost:10000/eventos', {
                 tipo: "MaquinasConsultadas",
                 dados: results 
